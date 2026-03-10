@@ -1,0 +1,9 @@
+# Build directories
+cmake-build-*/
+build/
+
+# IDE files (if you are using CLion/JetBrains)
+.idea/
+
+# Executables
+*.exe
