@@ -28,7 +28,6 @@ int main(const int argc, char *argv[]) {
         return 1;
     }
     uint16_t jpgStructure;
-
     fread(&jpgStructure,sizeof(uint16_t),1,f);
 
     printf("%x\n",jpgStructure);
