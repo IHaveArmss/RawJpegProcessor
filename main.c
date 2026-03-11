@@ -90,23 +90,12 @@ int main(const int argc, char *argv[]) {
 
         }
     fread(&trashVariable,sizeof(uint8_t),1,f);
-
-    if (trashVariable!= 0x00) {
-        printf("\nincorrect value trashVariable 00 1");
-    }
-
+    printf("\n %x",trashVariable);
     fread(&trashVariable,sizeof(uint8_t),1,f);
-
-    if (trashVariable!= 0x3F) {
-        printf("\nincorrect value trashVariable 3F");
-
-    }
-
+    printf("\n %x",trashVariable);
     fread(&trashVariable,sizeof(uint8_t),1,f);
-
-    if (trashVariable!= 0x00) {
-        printf("\nincorrect value trashVariable 00 2 ");
-    }
+    printf("\n %x",trashVariable);
+    //de aici citimi huffman bytestuffing hell
 
     fclose(f);
     return 0;
