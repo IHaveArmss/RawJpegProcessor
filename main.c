@@ -3,7 +3,11 @@
 #include <string.h>
 #include <stdint.h>
 
-
+typedef struct {
+    uint8_t compId;
+    uint8_t DCHuff;
+    uint8_t ACHuff;
+}ComponentInfo;
 //swap for preknown byte size
 void swapBytes(void *p, const size_t size) {
     uint8_t *data = (uint8_t *)p;
@@ -60,8 +64,50 @@ int main(const int argc, char *argv[]) {
         swapBytes(&L,sizeof(L));
         fseek(f,L-2,SEEK_CUR);
     }
-    fread(&pairMarkers,sizeof(uint16_t),1,f);
-    printf("\n%x",pairMarkers);
+    //after finding the ffda marker break the while
+    uint16_t sosLenght;
+    fread(&sosLenght,sizeof(uint16_t),1,f);
+    swapBytes(&sosLenght,sizeof(uint16_t));
+    printf("\n%x",sosLenght);
+
+    uint8_t numberComponents;
+    fread(&numberComponents,sizeof(uint8_t),1,f);
+    printf("\n%d" ,numberComponents);
+
+    ComponentInfo components[4];
+    uint8_t trashVariable;
+    for (int i=0;i<numberComponents;i++) {
+
+        fread(&components[i].compId,sizeof(uint8_t),1,f);
+
+
+        fread(&trashVariable,sizeof(uint8_t),1,f);
+
+        const uint8_t mask1 = 0xf0;
+        components[i].DCHuff = (trashVariable&mask1)>>4 ;
+
+        components[i].ACHuff = (trashVariable&0x0F);
+
+        }
+    fread(&trashVariable,sizeof(uint8_t),1,f);
+
+    if (trashVariable!= 0x00) {
+        printf("\nincorrect value trashVariable 00 1");
+    }
+
+    fread(&trashVariable,sizeof(uint8_t),1,f);
+
+    if (trashVariable!= 0x3F) {
+        printf("\nincorrect value trashVariable 3F");
+
+    }
+
+    fread(&trashVariable,sizeof(uint8_t),1,f);
+
+    if (trashVariable!= 0x00) {
+        printf("\nincorrect value trashVariable 00 2 ");
+    }
+
     fclose(f);
     return 0;
 }
