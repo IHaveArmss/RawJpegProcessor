@@ -8,7 +8,7 @@ typedef struct {
     uint8_t DCHuff;
     uint8_t ACHuff;
 }ComponentInfo;
-//swap for preknown byte size
+//swap for little endian shitty byte thigns
 void swapBytes(void *p, const size_t size) {
     uint8_t *data = (uint8_t *)p;
     for (size_t i = 0;i < size/2;i++) {
@@ -40,11 +40,22 @@ int main(const int argc, char *argv[]) {
     uint16_t pairMarkers;
     uint16_t L;
 
+    uint8_t quantTable[4][64];
+    // MAIN WHILE
     while (fread(&pairMarkers,sizeof(uint16_t),1,f)==1) {
+
         swapBytes(&pairMarkers,sizeof(uint16_t));
+
+        if (pairMarkers==0xFFDA) {
+            break;
+        }
+
+        fread(&L,sizeof(uint16_t),1,f);
+        swapBytes(&L,sizeof(L));
+
         if (pairMarkers==0xFFC0 || pairMarkers ==0xFFC2) {
             const long pos = ftell(f);
-            fseek(f,3,SEEK_CUR);
+            fseek(f,1,SEEK_CUR);
 
             uint16_t imgHeight;
             fread(&imgHeight,sizeof(uint16_t),1,f);
@@ -57,11 +68,29 @@ int main(const int argc, char *argv[]) {
             printf("\n%d %d",imgWidth,imgHeight);
             fseek(f,pos,SEEK_SET);
         }
-        if (pairMarkers==0xFFDA) {
-            break;
+        //IMAGE QUANT TABLE MANIPULATION
+        if (pairMarkers == 0xFFDB) {
+            const long pos = ftell(f);
+
+            int bytesRead = 0;
+            int payloadSize = L-2;
+
+            while (bytesRead < payloadSize) {
+                uint8_t infoByte;
+                fread(&infoByte,sizeof(uint8_t),1,f);
+                bytesRead += 1;
+
+                uint8_t tableID = infoByte & 0x0F;
+
+                fread(quantTable[tableID],sizeof(uint8_t),64,f);
+                bytesRead += 64;
+
+                printf("\n Saved quant table id %d",tableID);
+            }
+
+            fseek(f,pos,SEEK_SET);
         }
-        fread(&L,sizeof(uint16_t),1,f);
-        swapBytes(&L,sizeof(L));
+
         fseek(f,L-2,SEEK_CUR);
     }
     //after finding the ffda marker break the while
@@ -96,6 +125,8 @@ int main(const int argc, char *argv[]) {
     fread(&trashVariable,sizeof(uint8_t),1,f);
     printf("\n %x",trashVariable);
     //de aici citimi huffman bytestuffing hell
+
+
 
     fclose(f);
     return 0;
