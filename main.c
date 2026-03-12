@@ -8,6 +8,7 @@ typedef struct {
     uint8_t DCHuff;
     uint8_t ACHuff;
 }ComponentInfo;
+
 //swap for little endian shitty byte thigns
 void swapBytes(void *p, const size_t size) {
     uint8_t *data = (uint8_t *)p;
@@ -18,6 +19,11 @@ void swapBytes(void *p, const size_t size) {
     }
 }
 
+uint8_t dcHuffmanLengths[4][16];
+uint8_t dcHuffmanValues[4][256];
+
+uint8_t acHuffmanLengths[4][16];
+uint8_t acHuffmanValues[4][256];
 
 int main(const int argc, char *argv[]) {
 
@@ -66,6 +72,38 @@ int main(const int argc, char *argv[]) {
             swapBytes(&imgWidth,sizeof(imgWidth));
 
             printf("\n%d %d",imgWidth,imgHeight);
+            fseek(f,pos,SEEK_SET);
+        }
+        //HUFFMAN TABLES
+        if (pairMarkers == 0XFFC4) {
+            const long pos = ftell(f);
+
+            int bytesRead = 0;
+            int payloadSize = L-2;
+
+            while (bytesRead<payloadSize) {
+                uint8_t infoByte;
+                fread(&infoByte, sizeof(uint8_t),1,f);
+                bytesRead +=1;
+
+                uint8_t tableClass = (infoByte & 0xF0) >>4;
+                uint8_t tableID = (infoByte & 0x0F);
+
+                uint8_t *lenghtsArray = (tableClass==0) ? dcHuffmanLengths[tableID] : acHuffmanLengths[tableID];
+                uint8_t *valuesArray = (tableClass ==0) ? dcHuffmanValues[tableID] : acHuffmanValues[tableID];
+
+                fread(lenghtsArray,sizeof(uint8_t),16,f);
+                bytesRead += 16;
+
+                int totalSymbols = 0;
+                for (int i=0;i <16 ;i++) {
+                    totalSymbols = totalSymbols + lenghtsArray[i];
+                }
+
+                fread(valuesArray, sizeof(uint8_t),totalSymbols,f);
+                bytesRead = bytesRead + totalSymbols;
+                printf("\nSaved Huffman Table Class: %d, ID: %d, Total symbols: %d", tableClass, tableID, totalSymbols);
+            }
             fseek(f,pos,SEEK_SET);
         }
         //IMAGE QUANT TABLE MANIPULATION
