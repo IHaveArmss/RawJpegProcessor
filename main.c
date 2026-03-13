@@ -9,6 +9,11 @@ typedef struct {
     uint8_t ACHuff;
 }ComponentInfo;
 
+typedef struct {
+    uint16_t code;
+    uint8_t length;
+} HuffmanNode;
+
 //swap for little endian shitty byte thigns
 void swapBytes(void *p, const size_t size) {
     uint8_t *data = (uint8_t *)p;
@@ -115,15 +120,32 @@ int main(const int argc, char *argv[]) {
 
             while (bytesRead < payloadSize) {
                 uint8_t infoByte;
-                fread(&infoByte,sizeof(uint8_t),1,f);
                 bytesRead += 1;
 
+                fread(&infoByte,sizeof(uint8_t),1,f);
+
+                uint8_t precision = infoByte >> 4;
                 uint8_t tableID = infoByte & 0x0F;
 
-                fread(quantTable[tableID],sizeof(uint8_t),64,f);
-                bytesRead += 64;
+                if (precision == 0) {
+                    for (int i = 0; i<64; i++) {
+                        uint8_t val;
+                        fread(&val, sizeof(uint8_t), 1, f);
+                        quantTable[tableID][i] = val;
+                    }
+                    bytesRead += 64;
+                } else {
+                    // Precizie 16biti: citim 64 de valori pe 2 octeti (128 octeti total)
+                    for (int i = 0; i < 64; i++) {
+                        uint16_t val;
+                        fread(&val,sizeof(uint16_t), 1, f);
+                        swapBytes(&val,sizeof(uint16_t));
+                        quantTable[tableID][i] = val;
+                    }
+                    bytesRead += 128;
+                }
 
-                printf("\n Saved quant table id %d",tableID);
+                printf("\n Saved quant table id %d (Precision: %d)", tableID, precision);
             }
 
             fseek(f,pos,SEEK_SET);
